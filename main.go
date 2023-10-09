@@ -29,12 +29,11 @@ func initLoggers() {
 
 func main() {
 	initLoggers()
-	infoLogger.Print("WordScrape")
+	infoLogger.Print("Starting WordScrape")
 
 	URL := "https://quotes.toscrape.com/page/2/aaaa"
 
 	response, err := http.Get(URL)
-
 	if err != nil {
 		errorLogger.Fatal(err)
 	}
@@ -44,8 +43,8 @@ func main() {
 	if response.StatusCode != http.StatusOK {
 		warningLogger.Print(response.Status, " -- skipping website: ", URL)
 	}
-	contentType := response.Header.Get("Content-Type")
 
+	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
 		warningLogger.Print("Unexpected website content type", " -- skipping website: ", URL)
 	}
