@@ -24,8 +24,5 @@ func removeInterpunction(input string) string {
 func getWords(data string) []string {
 	text := removeInterpunction(data)
 	fields := strings.Fields(text) // remove whitespaces
-
-	// data = strings.ReplaceAll(data, "\n", " ")
-
 	return fields
 }

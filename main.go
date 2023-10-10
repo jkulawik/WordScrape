@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -34,7 +33,7 @@ func main() {
 	infoLogger.Print("Starting WordScrape")
 
 	URL := "https://quotes.toscrape.com/page/2/"
-	URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
+	// URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
 
 	response, err := http.Get(URL)
 	if err != nil {
@@ -77,6 +76,7 @@ func main() {
 		}
 	}
 	words := getWords(fullText)
-	fmt.Print(words)
+	// fmt.Print(words)
+	writeWordCache(URL, words)
 	// fmt.Printf("%q", text) // adds quotes around each element
 }
