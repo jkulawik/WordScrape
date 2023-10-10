@@ -34,7 +34,7 @@ func main() {
 	infoLogger.Print("Starting WordScrape")
 
 	URL := "https://quotes.toscrape.com/page/2/"
-	// URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
+	URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
 
 	response, err := http.Get(URL)
 	if err != nil {
@@ -53,9 +53,11 @@ func main() {
 	}
 
 	tokenizer := html.NewTokenizer(response.Body)
+	previousTokenStartsScript := false
 	var fullText string
 
 	for {
+
 		tokenType := tokenizer.Next()
 
 		if tokenType == html.ErrorToken {
@@ -66,10 +68,11 @@ func main() {
 				errorLogger.Print(err)
 				break
 			}
-		}
-
-		token := tokenizer.Token()
-		if tokenType == html.TextToken {
+		} else if tokenType == html.StartTagToken {
+			token := tokenizer.Token()
+			previousTokenStartsScript = token.Data == "script"
+		} else if tokenType == html.TextToken && !previousTokenStartsScript {
+			token := tokenizer.Token()
 			fullText += token.Data
 		}
 	}
