@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -31,7 +33,8 @@ func main() {
 	initLoggers()
 	infoLogger.Print("Starting WordScrape")
 
-	URL := "https://quotes.toscrape.com/page/2/aaaa"
+	URL := "https://quotes.toscrape.com/page/2/"
+	// URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
 
 	response, err := http.Get(URL)
 	if err != nil {
@@ -50,4 +53,27 @@ func main() {
 	}
 
 	tokenizer := html.NewTokenizer(response.Body)
+	var fullText string
+
+	for {
+		tokenType := tokenizer.Next()
+
+		if tokenType == html.ErrorToken {
+			err = tokenizer.Err()
+			if err == io.EOF {
+				break
+			} else {
+				errorLogger.Print(err)
+				break
+			}
+		}
+
+		token := tokenizer.Token()
+		if tokenType == html.TextToken {
+			fullText += token.Data
+		}
+	}
+	words := getWords(fullText)
+	fmt.Print(words)
+	// fmt.Printf("%q", text) // adds quotes around each element
 }
