@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-func removeInterpunction(str string) string {
+func removeInterpunction(input string) string {
 	mappingFunc := func(r rune) rune {
 		// replace - and _ with spaces; often used as word separators
 		if r == '\u002D' || r == '\u005F' {
@@ -18,7 +18,7 @@ func removeInterpunction(str string) string {
 		return r
 		// return unicode.ToLower(r) // only use lowercase
 	}
-	return strings.Map(mappingFunc, str)
+	return strings.Map(mappingFunc, input)
 }
 
 func getWords(data string) []string {
