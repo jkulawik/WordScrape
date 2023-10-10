@@ -23,6 +23,5 @@ func removeInterpunction(input string) string {
 
 func getWords(data string) []string {
 	text := removeInterpunction(data)
-	fields := strings.Fields(text) // remove whitespaces
-	return fields
+	return strings.Fields(text) // remove whitespaces
 }
