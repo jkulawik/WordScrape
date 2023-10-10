@@ -75,8 +75,13 @@ func main() {
 			fullText += token.Data
 		}
 	}
+
 	words := getWords(fullText)
 	// fmt.Print(words)
-	writeWordCache(URL, words)
 	// fmt.Printf("%q", text) // adds quotes around each element
+
+	err = writeWordCache(URL, words)
+	if err != nil {
+		warningLogger.Print(err)
+	}
 }
