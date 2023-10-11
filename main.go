@@ -38,7 +38,7 @@ func getWordsFromURL(sourceURL string) []string {
 	infoLogger.Print("Scraping ", sourceURL)
 	fullText, err := getWebsiteText(sourceURL)
 	if err != nil {
-		warningLogger.Print(sourceURL, err, " -- website words will be skipped")
+		errorLogger.Print(sourceURL, err, " -- website words will be skipped")
 		return nil
 	}
 
@@ -54,11 +54,15 @@ func main() {
 	initLoggers()
 	infoLogger.Print("Starting WordScrape")
 
-	URL := "https://quotes.toscrape.com/page/2/"
+	URL := "https://quotes.toscrape.com/page/3/"
 	// URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
 
 	words := getWordsFromURL(URL)
-	fmt.Print(words)
-	// fmt.Printf("%q", text) // adds quotes around each element
+	stats := getTopFrequentWords(words, 5)
+
+	fmt.Println()
+	for _, entry := range stats {
+		fmt.Println(entry.Word, "\t| count: ", entry.Count)
+	}
 
 }
