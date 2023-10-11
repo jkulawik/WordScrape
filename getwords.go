@@ -17,12 +17,11 @@ func removeInterpunction(input string) string {
 		if r == '\u002D' || r == '\u005F' {
 			return '\u0020'
 		}
-		//remove other interpunction, but ignore apostrophes because English
+		//remove interpunction, but ignore apostrophes because English
 		if unicode.IsPunct(r) && r != '\u0027' {
 			return -1
 		}
 		return r
-		// return unicode.ToLower(r) // only use lowercase
 	}
 	return strings.Map(mappingFunc, input)
 }
@@ -39,38 +38,34 @@ func getTopFrequentWords(data []string, topCount int) []WordCount {
 		wordCountMap[lowCaseWord]++
 		// this results with a map of unique words and their counts
 	}
-	// There is no native map sorting; instead sort the keys in a slice using the map values
+	/*
+		NOTE: maps in Go order their keys independently from the insertion order.
+		This means they cannot be used for returning sorted data as-is.
+		There is also no map sorting in the standard lib, so a custom solution is needed anyway;
+		hence I decided to use a slice of structs instead of map[string]int.
 
-	var uniqueWords []string
+		map[string]int is still used in the word counting above,
+		because using a struct slice there would be O(n^2); the current solution is O(n*log n).
+		https://stackoverflow.com/questions/29677670/what-is-the-big-o-performance-of-maps-in-golang
+	*/
+	var wordCounts []WordCount
 	for word := range wordCountMap {
-		uniqueWords = append(uniqueWords, word)
+		entry := WordCount{word, wordCountMap[word]}
+		wordCounts = append(wordCounts, entry)
 	}
 
 	sortFunc := func(i, j int) bool {
-		return wordCountMap[uniqueWords[i]] > wordCountMap[uniqueWords[j]]
+		return wordCounts[i].Count > wordCounts[j].Count
 	}
 
-	sort.Slice(uniqueWords, sortFunc)
+	sort.Slice(wordCounts, sortFunc)
 
 	realTopCount := 0
-	if topCount < 1 || topCount > len(uniqueWords) {
-		realTopCount = len(uniqueWords)
+	if topCount < 1 || topCount > len(wordCounts) {
+		realTopCount = len(wordCounts)
 	} else {
 		realTopCount = topCount
 	}
 
-	/*
-		NOTE: maps in Go order their keys deterministically, independently from the insertion order.
-		This means that regular maps cannot be used for returning sorted data as-is;
-		hence I decided to use and return a slice of structs instead of map[string]int.
-	*/
-
-	topWords := make([]WordCount, realTopCount)
-	for i := range topWords {
-		currentKey := uniqueWords[i]
-		topWords[i].Word = currentKey
-		topWords[i].Count = wordCountMap[currentKey]
-	}
-
-	return topWords
+	return wordCounts[:realTopCount]
 }

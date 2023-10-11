@@ -54,15 +54,14 @@ func main() {
 	initLoggers()
 	infoLogger.Print("Starting WordScrape")
 
-	URL := "https://quotes.toscrape.com/page/3/"
+	URL := "https://quotes.toscrape.com/page/2/"
 	// URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
 
 	words := getWordsFromURL(URL)
 	stats := getTopFrequentWords(words, 5)
 
-	fmt.Println()
+	fmt.Println("\nResults:")
 	for _, entry := range stats {
 		fmt.Println(entry.Word, "\t| count: ", entry.Count)
 	}
-
 }
