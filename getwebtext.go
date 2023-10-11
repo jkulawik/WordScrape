@@ -9,7 +9,6 @@ import (
 	"golang.org/x/net/html"
 )
 
-// TODO refactor this to return errors
 func getWebsiteText(sourceURL string) (string, error) {
 	response, err := http.Get(sourceURL)
 	if err != nil {
