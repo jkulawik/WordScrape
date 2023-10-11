@@ -25,20 +25,27 @@ func initLoggers() {
 }
 
 func getWordsFromURL(sourceURL string) []string {
-	var websiteWords []string
-	var err error
 	if isCacheAvailable(sourceURL) {
 		infoLogger.Print("Reading cache for ", sourceURL)
-		websiteWords, err = readWordCache(sourceURL)
-	} else {
-		infoLogger.Print("Scraping ", sourceURL)
-		fullText := getWebsiteText(sourceURL)
-		websiteWords = getWords(fullText)
-		err = writeWordCache(sourceURL, websiteWords)
+		websiteWords, err := readWordCache(sourceURL)
+		if err != nil {
+			warningLogger.Print(err)
+		} else {
+			return websiteWords
+		}
 	}
 
+	infoLogger.Print("Scraping ", sourceURL)
+	fullText, err := getWebsiteText(sourceURL)
 	if err != nil {
-		warningLogger.Print(err)
+		warningLogger.Print(sourceURL, err, " -- website words will be skipped")
+		return nil
+	}
+
+	websiteWords := getWords(fullText)
+	err = writeWordCache(sourceURL, websiteWords)
+	if err != nil {
+		warningLogger.Print(sourceURL, err)
 	}
 	return websiteWords
 }

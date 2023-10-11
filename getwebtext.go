@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -9,27 +10,25 @@ import (
 )
 
 // TODO refactor this to return errors
-func getWebsiteText(sourceURL string) string {
+func getWebsiteText(sourceURL string) (string, error) {
 	response, err := http.Get(sourceURL)
 	if err != nil {
-		errorLogger.Fatal(err)
+		return "", err
 	}
 
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		warningLogger.Print(response.Status, " -- skipping website: ", sourceURL)
-		return ""
+		return "", errors.New("received status " + response.Status)
 	}
 
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
-		warningLogger.Print("Unexpected website content type", " -- skipping website: ", sourceURL)
-		return ""
+		return "", errors.New("unexpected content type")
 	}
 
 	tokenizer := html.NewTokenizer(response.Body)
-	previousTokenStartsScript := false
+	previousTokenStartsScript := false //text fields can contain JavaScript
 	var fullText string
 
 	for {
@@ -40,8 +39,7 @@ func getWebsiteText(sourceURL string) string {
 			if err == io.EOF {
 				break
 			} else {
-				warningLogger.Print(err)
-				break
+				return "", errors.New("HTML parsing error: " + err.Error())
 			}
 		} else if tokenType == html.StartTagToken {
 			token := tokenizer.Token()
@@ -51,5 +49,5 @@ func getWebsiteText(sourceURL string) string {
 			fullText += token.Data
 		}
 	}
-	return fullText
+	return fullText, nil
 }

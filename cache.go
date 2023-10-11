@@ -32,18 +32,18 @@ func writeWordCache(sourceURL string, words []string) error {
 
 	cacheJSON, err := json.MarshalIndent(cache, "", "\t")
 	if err != nil {
-		return errors.New("Error while converting cache to JSON: " + err.Error())
+		return errors.New("error while converting cache to JSON: " + err.Error())
 	}
 
 	err = os.MkdirAll(cacheDirectory, 0777)
 	if err != nil {
-		return errors.New("Error while creating cache directory: " + err.Error())
+		return errors.New("error while creating cache directory: " + err.Error())
 	}
 
 	filename := hashString(sourceURL)
 	err = os.WriteFile(cacheDirectory+filename+".json", cacheJSON, 0666)
 	if err != nil {
-		return errors.New("Error while writing cache file: " + err.Error())
+		return errors.New("error while writing cache file: " + err.Error())
 	}
 
 	return nil
@@ -53,13 +53,13 @@ func readWordCache(sourceURL string) ([]string, error) {
 	filename := hashString(sourceURL)
 	fileBytes, err := os.ReadFile(cacheDirectory + filename + ".json")
 	if err != nil {
-		return nil, errors.New("Error while reading cache file: " + err.Error())
+		return nil, errors.New("error while reading cache file: " + err.Error())
 	}
 
 	cache := WebsiteWordsCache{}
 	err = json.Unmarshal(fileBytes, &cache)
 	if err != nil {
-		return nil, errors.New("Error while loading cache JSON: " + err.Error())
+		return nil, errors.New("error while loading cache JSON: " + err.Error())
 	}
 	return cache.Words, nil
 }
