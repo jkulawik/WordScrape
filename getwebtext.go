@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// TODO refactor this to return errors
 func getWebsiteText(sourceURL string) string {
 	response, err := http.Get(sourceURL)
 	if err != nil {
@@ -18,11 +19,13 @@ func getWebsiteText(sourceURL string) string {
 
 	if response.StatusCode != http.StatusOK {
 		warningLogger.Print(response.Status, " -- skipping website: ", sourceURL)
+		return ""
 	}
 
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
 		warningLogger.Print("Unexpected website content type", " -- skipping website: ", sourceURL)
+		return ""
 	}
 
 	tokenizer := html.NewTokenizer(response.Body)
@@ -37,7 +40,7 @@ func getWebsiteText(sourceURL string) string {
 			if err == io.EOF {
 				break
 			} else {
-				errorLogger.Print(err)
+				warningLogger.Print(err)
 				break
 			}
 		} else if tokenType == html.StartTagToken {
