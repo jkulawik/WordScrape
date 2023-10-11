@@ -48,3 +48,24 @@ func writeWordCache(sourceURL string, words []string) error {
 
 	return nil
 }
+
+func readWordCache(sourceURL string) ([]string, error) {
+	filename := hashString(sourceURL)
+	fileBytes, err := os.ReadFile(cacheDirectory + filename + ".json")
+	if err != nil {
+		return nil, errors.New("Error while reading cache file: " + err.Error())
+	}
+
+	cache := WebsiteWordsCache{}
+	err = json.Unmarshal(fileBytes, &cache)
+	if err != nil {
+		return nil, errors.New("Error while loading cache JSON: " + err.Error())
+	}
+	return cache.Words, nil
+}
+
+func isCacheAvailable(sourceURL string) bool {
+	filename := hashString(sourceURL)
+	_, err := os.Stat(cacheDirectory + filename + ".json")
+	return err == nil
+}
