@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 )
 
 var (
@@ -43,6 +44,7 @@ func getWordsFromURL(sourceURL string) []string {
 	}
 
 	websiteWords := getWords(fullText)
+	infoLogger.Print("Writing cache for ", sourceURL)
 	err = writeWordCache(sourceURL, websiteWords)
 	if err != nil {
 		warningLogger.Print(sourceURL, err)
@@ -50,16 +52,58 @@ func getWordsFromURL(sourceURL string) []string {
 	return websiteWords
 }
 
+func getWordsFromURLWorker(jobs chan string, results chan []string, waitGroup *sync.WaitGroup) {
+	// Consume jobs
+	for url := range jobs {
+		results <- getWordsFromURL(url)
+	}
+	waitGroup.Done()
+}
+
 func main() {
 	initLoggers()
 	infoLogger.Print("Starting WordScrape")
 
-	URL := "https://quotes.toscrape.com/page/2/"
-	// URL = "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news"
+	URLs := []string{
+		"https://quotes.toscrape.com/page/2/",
+		"https://quotes.toscrape.com/page/3/",
+		"https://quotes.toscrape.com/page/4/",
+		"https://quotes.toscrape.com/page/5/",
+		// "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news",
+	}
 
-	words := getWordsFromURL(URL)
-	stats := getTopFrequentWords(words, 5)
+	workerCount := 2
+	var allWords []string
+	jobs := make(chan string)
+	results := make(chan []string)
 
+	// Start filling the job pipeline
+	go func() {
+		for _, url := range URLs {
+			jobs <- url
+		}
+		close(jobs)
+	}()
+
+	// Start consuming results
+	go func() {
+		for result := range results {
+			allWords = append(allWords, result...)
+		}
+	}()
+
+	// Start workers
+	var workerWaitGroup sync.WaitGroup
+	for i := 0; i < workerCount; i++ {
+		workerWaitGroup.Add(1)
+		go getWordsFromURLWorker(jobs, results, &workerWaitGroup)
+	}
+
+	// Wait for all jobs to be consumed
+	workerWaitGroup.Wait()
+	close(results)
+
+	stats := getTopFrequentWords(allWords, 5)
 	fmt.Println("\nResults:")
 	for _, entry := range stats {
 		fmt.Println(entry.Word, "\t| count: ", entry.Count)
