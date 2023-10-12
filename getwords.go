@@ -17,7 +17,7 @@ func removeInterpunction(input string) string {
 		if r == '\u002D' || r == '\u005F' {
 			return '\u0020'
 		}
-		//remove interpunction, but ignore apostrophes because English
+		// remove interpunction, but ignore apostrophes because English
 		if unicode.IsPunct(r) && r != '\u0027' {
 			return -1
 		}
@@ -28,7 +28,7 @@ func removeInterpunction(input string) string {
 
 func getWords(data string) []string {
 	text := removeInterpunction(data)
-	return strings.Fields(text) // remove whitespaces
+	return strings.Fields(text) // removes whitespaces
 }
 
 func getTopFrequentWords(data []string, topCount int) []WordCount {

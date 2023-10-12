@@ -12,8 +12,6 @@ import (
 const cacheDirectory string = "word-cache/"
 
 type WebsiteWordsCache struct {
-	// URLHash string   `json:"url_hash"`
-
 	URL   string   `json:"url"`
 	Words []string `json:"words"`
 }

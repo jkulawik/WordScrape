@@ -18,7 +18,6 @@ func TestGetTopFrequentWords(t *testing.T) {
 
 	if len(expectedResults) != len(results) {
 		t.Log(results)
-		t.Log(len(testdata))
 		t.Fatal("Results have incorrect lenght. Expected 4 but got", len(results))
 	}
 
