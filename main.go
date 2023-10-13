@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -25,8 +26,8 @@ func initLoggers() {
 	errorLogger = log.New(os.Stderr, errorPrefix, log.Lshortfile)
 }
 
-func getWordsFromURL(sourceURL string) []string {
-	if isCacheAvailable(sourceURL) {
+func getWordsFromURL(sourceURL string, skipCache bool) []string {
+	if isCacheAvailable(sourceURL) && !skipCache {
 		infoLogger.Print("Reading cache for ", sourceURL)
 		websiteWords, err := readWordCache(sourceURL)
 		if err != nil {
@@ -39,7 +40,7 @@ func getWordsFromURL(sourceURL string) []string {
 	infoLogger.Print("Scraping ", sourceURL)
 	fullText, err := getWebsiteText(sourceURL)
 	if err != nil {
-		errorLogger.Print(sourceURL, " ", err, " -- website will be skipped")
+		errorLogger.Print(err, " -- skipping website ", sourceURL)
 		return nil
 	}
 
@@ -52,31 +53,50 @@ func getWordsFromURL(sourceURL string) []string {
 	return websiteWords
 }
 
-func getWordsFromURLWorker(jobs chan string, results chan []string, waitGroup *sync.WaitGroup) {
-	// Consume jobs
-	for url := range jobs {
-		words := getWordsFromURL(url)
-		results <- words
-	}
-	waitGroup.Done()
-}
-
 func main() {
 	initLoggers()
-	infoLogger.Print("Starting WordScrape")
 
-	URLs := []string{
-		// "https://quotes.toscrape.com/doesntexist/",
-		// "https://www.moddb.com/news/doesntexist/",
-		"https://quotes.toscrape.com/page/2/",
-		"https://quotes.toscrape.com/page/3/",
-		"https://quotes.toscrape.com/page/4/",
-		"https://quotes.toscrape.com/page/5/",
-		// "https://www.moddb.com/news/an-unfortunate-delay-yet-plenty-of-good-news",
+	exampleURLsCount := flag.Int("e", 0, "How many pages of quotes.toscrape.com examples (max 10) to add to the scrape list")
+	workerCount := flag.Int("w", -1, "How many goroutines to use for scraping. Default is one for every URL")
+	addBadURLs := flag.Bool("b", false, "Add invalid and 404 URLs to the scrape list")
+	skipCache := flag.Bool("s", false, "Do not read cache, always scrape sites")
+	flag.Usage = func() {
+		fmt.Printf("Usage of %s:\n", os.Args[0])
+		fmt.Println("wordscrape [optional flags] [URLs to scrape]...")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
+	infoLogger.Print("Starting WordScrape")
+	URLs := []string{}
+
+	// Process flags and arguments
+	if *exampleURLsCount < 0 {
+		*exampleURLsCount = 10
 	}
 
+	for i := 0; i < *exampleURLsCount; i++ {
+		url := fmt.Sprintf("https://quotes.toscrape.com/page/%d/", i+1)
+		URLs = append(URLs, url)
+	}
+
+	if *addBadURLs {
+		URLs = append(URLs,
+			"https://quotes.toscrape.com/doesntexist/",
+			"http://definitelydoesnotexist.io/",
+			"ftp://definitelydoesnotexist.io/",
+			"justsomestring",
+		)
+	}
+
+	URLs = append(URLs, flag.Args()...)
+
+	if *workerCount < 1 {
+		*workerCount = len(URLs)
+	}
+
+	// The program proper
 	var allWords []string
-	workerCount := 2
 	jobs := make(chan string)
 	results := make(chan []string)
 
@@ -100,11 +120,18 @@ func main() {
 		resultsWaitGroup.Done()
 	}()
 
-	// Start workers
+	// Start worker routines
 	var workerWaitGroup sync.WaitGroup
-	for i := 0; i < workerCount; i++ {
+	for i := 0; i < *workerCount; i++ {
 		workerWaitGroup.Add(1)
-		go getWordsFromURLWorker(jobs, results, &workerWaitGroup)
+		go func() {
+			// Consume jobs
+			for url := range jobs {
+				words := getWordsFromURL(url, *skipCache)
+				results <- words
+			}
+			workerWaitGroup.Done()
+		}()
 	}
 
 	// Wait for all jobs to be consumed
@@ -112,6 +139,7 @@ func main() {
 	close(results)
 	resultsWaitGroup.Wait()
 
+	// Display results
 	stats := getTopFrequentWords(allWords, 5)
 	fmt.Println("\nResults:")
 	for _, entry := range stats {
