@@ -50,30 +50,3 @@ func getWebsiteText(sourceURL string) (string, error) {
 	}
 	return fullText, nil
 }
-
-func getWordsFromURL(sourceURL string, skipCache bool) []string {
-	if isCacheAvailable(sourceURL) && !skipCache {
-		infoLogger.Print("Reading cache for ", sourceURL)
-		websiteWords, err := readWordCache(sourceURL)
-		if err != nil {
-			warningLogger.Print(err)
-		} else {
-			return websiteWords
-		}
-	}
-
-	infoLogger.Print("Scraping ", sourceURL)
-	fullText, err := getWebsiteText(sourceURL)
-	if err != nil {
-		errorLogger.Print(err, " -- skipping website ", sourceURL)
-		return nil
-	}
-
-	websiteWords := getWords(fullText)
-	infoLogger.Print("Writing cache for ", sourceURL)
-	err = writeWordCache(sourceURL, websiteWords)
-	if err != nil {
-		warningLogger.Print(sourceURL, err)
-	}
-	return websiteWords
-}
