@@ -54,10 +54,9 @@ func getWordsFromURL(sourceURL string, skipCache bool) []string {
 }
 
 func main() {
-	initLoggers()
-
 	exampleURLsCount := flag.Int("e", 0, "How many pages of quotes.toscrape.com examples (max 10) to add to the scrape list")
-	workerCount := flag.Int("w", -1, "How many goroutines to use for scraping. Default is one for every URL")
+	workerCount := flag.Int("w", 0, "How many goroutines to use for scraping. Default is one for every URL")
+	topWordsCount := flag.Int("t", 5, "How many of the most frequently used words to display")
 	addBadURLs := flag.Bool("b", false, "Add invalid and 404 URLs to the scrape list")
 	skipCache := flag.Bool("s", false, "Do not read cache, always scrape sites")
 	flag.Usage = func() {
@@ -67,10 +66,9 @@ func main() {
 	}
 	flag.Parse()
 
-	infoLogger.Print("Starting WordScrape")
 	URLs := []string{}
 
-	// Process flags and arguments
+	/* --- Process flags and arguments --- */
 	if *exampleURLsCount < 0 {
 		*exampleURLsCount = 10
 	}
@@ -89,13 +87,16 @@ func main() {
 		)
 	}
 
-	URLs = append(URLs, flag.Args()...)
+	URLs = append(URLs, flag.Args()...) // add remaining non-flag args to URLs
 
 	if *workerCount < 1 {
 		*workerCount = len(URLs)
 	}
 
-	// The program proper
+	/* --- The program proper --- */
+	initLoggers()
+	infoLogger.Print("Starting WordScrape")
+
 	var allWords []string
 	jobs := make(chan string)
 	results := make(chan []string)
@@ -113,10 +114,9 @@ func main() {
 	resultsWaitGroup.Add(1)
 	go func() {
 		for result := range results {
+			infoLogger.Print("Consumming a result")
 			allWords = append(allWords, result...)
 		}
-		// must wait for the last append to finish;
-		// without it there was a race condition where the last result was sometimes not being included in the stats
 		resultsWaitGroup.Done()
 	}()
 
@@ -125,22 +125,29 @@ func main() {
 	for i := 0; i < *workerCount; i++ {
 		workerWaitGroup.Add(1)
 		go func() {
-			// Consume jobs
+			// Consume jobs and pipe the results
 			for url := range jobs {
 				words := getWordsFromURL(url, *skipCache)
+				infoLogger.Print("Piping a result")
 				results <- words
 			}
 			workerWaitGroup.Done()
 		}()
 	}
 
-	// Wait for all jobs to be consumed
+	// Wait for all jobs to be finished
 	workerWaitGroup.Wait()
 	close(results)
+	// Wait for the result routine to finish
 	resultsWaitGroup.Wait()
+	/*
+		Without waiting, there is a race condition between appending the last result and the remainder of the program,
+		sometimes ending with the words from the last URL being excluded from the stats.
+		Can't use a single wait group because ...?
+	*/
 
 	// Display results
-	stats := getTopFrequentWords(allWords, 5)
+	stats := getTopFrequentWords(allWords, *topWordsCount)
 	fmt.Println("\nResults:")
 	for _, entry := range stats {
 		fmt.Println(entry.Word, "\t| count: ", entry.Count)

@@ -12,8 +12,10 @@ wordscrape [optional flags] [URLs to scrape]...
   -e int
         How many pages of quotes.toscrape.com examples (max 10) to add to the scrape list
   -s    Do not read cache, always scrape sites
+  -t int
+        How many of the most frequently used words to display (default 5)
   -w int
-        How many goroutines to use for scraping. Default is one for every URL
+        How many goroutines to use for scraping. Default is one for every URL (default -1)
 ```
 
 Cache is written to a `word-cache` folder in the directory the program was ran in.
