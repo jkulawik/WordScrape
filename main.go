@@ -114,7 +114,6 @@ func main() {
 	resultsWaitGroup.Add(1)
 	go func() {
 		for result := range results {
-			infoLogger.Print("Consumming a result")
 			allWords = append(allWords, result...)
 		}
 		resultsWaitGroup.Done()
@@ -128,7 +127,6 @@ func main() {
 			// Consume jobs and pipe the results
 			for url := range jobs {
 				words := getWordsFromURL(url, *skipCache)
-				infoLogger.Print("Piping a result")
 				results <- words
 			}
 			workerWaitGroup.Done()
@@ -138,12 +136,16 @@ func main() {
 	// Wait for all jobs to be finished
 	workerWaitGroup.Wait()
 	close(results)
-	// Wait for the result routine to finish
+	// Wait for the results routine to finish appending all of them
 	resultsWaitGroup.Wait()
 	/*
-		Without waiting, there is a race condition between appending the last result and the remainder of the program,
+		Without waiting for the results, there is a race condition between appending the last result and the last part of the program,
 		sometimes ending with the words from the last URL being excluded from the stats.
-		Can't use a single wait group because ...?
+
+		We also can't use a single wait group (i.e. *not* wait for the workers to finish before closing the results channel),
+		or the results channel will block the program waiting for a result that won't come.
+		Alternatively, we could do without workerWaitGroup if we closed the channel by
+		only receiving a set number  of results (len(URLs) to be precise), but that feels crude.
 	*/
 
 	// Display results
